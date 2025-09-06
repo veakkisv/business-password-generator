@@ -63,7 +63,7 @@
                 <label for="passwordLength" class="block text-gray-700 text-sm font-medium mb-2">
                     Password Length: <span id="lengthValue">12</span>
                 </label>
-                <input type="range" id="passwordLength" min="8" max="15" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <input type="range" id="passwordLength" min="10" max="15" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
             </div>
             <div>
                 <label for="userFunction" class="block text-gray-700 text-sm font-medium mb-2">
@@ -122,25 +122,24 @@
 
         // Data structure for function-specific jargon words
         const jargonWordsByFunction = {
-            general: ['Agile', 'Synergy', 'Metrics', 'Frontend', 'Scalable', 'Workflow', 'Disrupt', 'Innovate', 'Analytics', 'Stakeholder', 'Bandwidth', 'Paradigm'],
-            management: ['Strategy', 'KPIs', 'Stakeholder', 'Alignment', 'Leverage', 'Roadmap', 'Paradigm', 'Synergy', 'Agile', 'Metrics', 'Workflow', 'CoreCompetency'],
-            software: ['Frontend', 'Backend', 'DevOps', 'Framework', 'API', 'Database', 'Algorithm', 'Compiler', 'Protocol', 'Scalable', 'Microservice'],
-            mechanical: ['Thermodynamics', 'Kinematics', 'FluidDynamics', 'Combustion', 'CAD', 'Simulation', 'Tolerance', 'FatigueAnalysis', 'Aerodynamics', 'Statics'],
-            civil: ['Structural', 'Reinforced', 'Geotechnical', 'Hydrology', 'Infrastructure', 'Blueprint', 'UrbanPlanning', 'Substructure', 'Superstructure'],
-            electrical: ['Circuitry', 'Transistor', 'Capacitor', 'Resistor', 'Microcontroller', 'Voltage', 'Transformer', 'Oscillator', 'Conductor'],
-            finance: ['Equity', 'Valuation', 'Portfolio', 'Capital', 'Treasury', 'Liquidity', 'Audit', 'Forecasting'],
-            sales: ['Pipeline', 'Lead', 'Quota', 'Prospect', 'Conversion', 'Upsell', 'Retention', 'CRM'],
-            marketing: ['Campaign', 'SEO', 'Engagement', 'Analytics', 'Branding', 'Collateral', 'Funnel', 'Outreach'],
-            hr: ['Recruitment', 'Onboarding', 'Compensation', 'Benefits', 'Retention', 'Compliance', 'Performance', 'Workforce']
+            general: ['Agile', 'Synergy', 'Metrics', 'Team', 'Lead', 'Flow', 'Data', 'Goal', 'Tech', 'Code', 'Sync', 'Task', 'Dev'],
+            management: ['Plan', 'Lead', 'Sync', 'Risk', 'KPIs', 'Agile', 'Goal', 'Role'],
+            software: ['Code', 'Flow', 'Data', 'Dev', 'Test', 'Bug', 'API', 'App'],
+            mechanical: ['Tech', 'Design', 'Part', 'Tool', 'Spec', 'Gear', 'Unit'],
+            civil: ['Plan', 'Spec', 'Plot', 'Site', 'Load', 'Build'],
+            electrical: ['Wire', 'Volt', 'Fuse', 'Plug', 'Node', 'Chip', 'Grid'],
+            finance: ['Fund', 'Cash', 'Rate', 'Loan', 'Cost', 'Tax'],
+            sales: ['Lead', 'Sale', 'Deal', 'CRM', 'Quota', 'Goal'],
+            marketing: ['Brand', 'Lead', 'Data', 'SEO', 'Ad', 'Funnel'],
+            hr: ['Hire', 'Team', 'Role', 'Goal', 'Pay', 'Perk']
         };
         
         const allowedSymbols = ['!', '@', '#', '$', '%', '&'];
+        const allowedPadChars = "0123456789" + allowedSymbols.join('');
 
         // A map for converting letters to numbers and symbols
         const letterToReplacementMap = {
-            'a': ['4', '@'], 'b': ['8'], 'c': ['('], 'd': ['&'], 'e': ['3'],
-            'g': ['9'], 'h': ['#'], 'i': ['1', '!'], 'o': ['0'], 's': ['5', '$'],
-            't': ['7']
+            'a': ['4', '@'], 'b': ['8'], 'e': ['3'], 'g': ['9'], 'i': ['1', '!'], 'o': ['0'], 's': ['5', '$']
         };
         
         /**
@@ -153,25 +152,50 @@
         }
 
         /**
-         * Generates a password as a phrase of two words with character replacement,
-         * then adjusts its length to match the user's selection.
+         * Processes a word by selectively replacing characters with numbers or symbols.
+         * @param {string} word The word to process.
+         * @param {number} currentSpecialCharCount The current count of special characters and numbers.
+         * @returns {{processedWord: string, newSpecialCharCount: number}} An object containing the processed word and the updated count.
+         */
+        function processWord(word, currentSpecialCharCount) {
+            let processed = '';
+            let replacementCount = currentSpecialCharCount;
+
+            for (const char of word) {
+                const lowerChar = char.toLowerCase();
+                const replacements = letterToReplacementMap[lowerChar];
+                
+                // Only replace if a replacement exists and we haven't hit the limit.
+                if (replacements && replacementCount < 2 && Math.random() < 0.5) {
+                    const replacement = getRandomElement(replacements);
+                    processed += replacement;
+                    replacementCount++;
+                } else {
+                    processed += char;
+                }
+            }
+            return { processedWord: processed, newSpecialCharCount: replacementCount };
+        }
+
+        /**
+         * Generates a password based on two jargon words, with replacements and a separator.
          */
         function generateJargonPassword() {
             const desiredLength = parseInt(passwordLengthInput.value, 10);
             const selectedFunction = userFunctionSelect.value;
-            const wordsForFunction = jargonWordsByFunction[selectedFunction] || jargonWordsByFunction.general;
+            const wordsForFunction = jargonWordsByFunction[selectedFunction];
             
             let finalPassword = '';
             let attempts = 0;
             const maxAttempts = 50;
-
+            
             // Loop to ensure the new password is not the same as the last one
             do {
                 if (attempts > maxAttempts) {
                     console.warn('Could not generate a unique password after several attempts.');
                     break;
                 }
-
+                
                 // Select two random jargon words based on the function
                 let word1 = getRandomElement(wordsForFunction);
                 let word2;
@@ -179,44 +203,26 @@
                     word2 = getRandomElement(wordsForFunction);
                 } while (word1 === word2); // Ensure the words are different
 
-                let basePassword = '';
-
-                // Process the first word with a 50% chance to replace characters
-                for (const char of word1) {
-                    const lowerChar = char.toLowerCase();
-                    const replacements = letterToReplacementMap[lowerChar];
-                    if (replacements && Math.random() < 0.5) { 
-                        basePassword += getRandomElement(replacements);
-                    } else {
-                        basePassword += char;
-                    }
+                let replacementCount = 0;
+                
+                const result1 = processWord(word1, replacementCount);
+                const processedWord1 = result1.processedWord;
+                replacementCount = result1.newSpecialCharCount;
+                
+                const separator = getRandomElement(allowedSymbols);
+                
+                const result2 = processWord(word2, replacementCount);
+                const processedWord2 = result2.processedWord;
+                
+                finalPassword = processedWord1 + separator + processedWord2;
+                
+                // Pad or trim the password to match the desired length.
+                while (finalPassword.length < desiredLength) {
+                    finalPassword += getRandomElement(allowedPadChars.split(''));
                 }
                 
-                // Add a random symbol in between the words
-                basePassword += getRandomElement(allowedSymbols);
-
-                // Process the second word with a 50% chance to replace characters
-                for (const char of word2) {
-                    const lowerChar = char.toLowerCase();
-                    const replacements = letterToReplacementMap[lowerChar];
-                    if (replacements && Math.random() < 0.5) { 
-                        basePassword += getRandomElement(replacements);
-                    } else {
-                        basePassword += char;
-                    }
-                }
-                
-                finalPassword = basePassword;
-
-                // Trim or pad the password to match the desired length
                 if (finalPassword.length > desiredLength) {
                     finalPassword = finalPassword.substring(0, desiredLength);
-                } else if (finalPassword.length < desiredLength) {
-                    const paddingNeeded = desiredLength - finalPassword.length;
-                    const charactersToPadWith = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + allowedSymbols.join('');
-                    for (let i = 0; i < paddingNeeded; i++) {
-                        finalPassword += getRandomElement(charactersToPadWith.split(''));
-                    }
                 }
 
                 attempts++;
@@ -296,6 +302,7 @@
         // Event listeners
         passwordLengthInput.addEventListener('input', (event) => {
             lengthValueSpan.textContent = event.target.value;
+            generateJargonPassword();
         });
 
         generateButton.addEventListener('click', generateMathProblem);
